@@ -4,10 +4,17 @@ import { useState, useCallback } from "react";
 import StepSidebar from "./StepSidebar";
 import StepContent from "./StepContent";
 import { WIZARD_STEPS } from "@/lib/wizard-steps";
+import { useSSE } from "@/lib/use-sse";
 
 export default function WizardLayout() {
   const [activeStepId, setActiveStepId] = useState("upload");
   const [completedStepIds, setCompletedStepIds] = useState<string[]>([]);
+
+  // Establish SSE connection for real-time progress streaming
+  const { connected: sseConnected } = useSSE("/api/sse", useCallback((event: string, data: unknown) => {
+    // SSE events will be handled by individual steps in later phases
+    console.debug("[SSE]", event, data);
+  }, []));
 
   const handleStepClick = (stepId: string) => {
     const stepIndex = WIZARD_STEPS.findIndex((s) => s.id === stepId);
