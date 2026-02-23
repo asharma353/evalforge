@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import StepSidebar from "./StepSidebar";
 import StepContent from "./StepContent";
 import { WIZARD_STEPS } from "@/lib/wizard-steps";
@@ -20,6 +20,22 @@ export default function WizardLayout() {
     }
   };
 
+  const handleStepComplete = useCallback(
+    (stepId: string) => {
+      setCompletedStepIds((prev) => {
+        if (prev.includes(stepId)) return prev;
+        return [...prev, stepId];
+      });
+
+      // Advance to the next step
+      const currentIndex = WIZARD_STEPS.findIndex((s) => s.id === stepId);
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        setActiveStepId(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    },
+    []
+  );
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
       <StepSidebar
@@ -27,7 +43,10 @@ export default function WizardLayout() {
         completedStepIds={completedStepIds}
         onStepClick={handleStepClick}
       />
-      <StepContent activeStepId={activeStepId} />
+      <StepContent
+        activeStepId={activeStepId}
+        onStepComplete={handleStepComplete}
+      />
     </div>
   );
 }
