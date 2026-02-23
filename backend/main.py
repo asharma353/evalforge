@@ -9,7 +9,7 @@ app = FastAPI(title="Eval Builder API")
 # CORS configuration for Next.js dev server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3010"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
