@@ -153,3 +153,15 @@ class GenerateRequest(BaseModel):
 
 class GenerateResponse(BaseModel):
     result: GenerationResult
+
+
+class TestCase(BaseModel):
+    input: str
+    expected_behavior: str
+    failure_mode_id: str
+
+
+class TestDataResult(BaseModel):
+    dimensions: list[dict]      # Raw dimension objects per failure mode
+    tuples: list[dict]          # Raw tuple combinations per failure mode
+    test_cases: list[TestCase]  # Final natural language test cases
