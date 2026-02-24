@@ -355,6 +355,11 @@ export default function UploadStep({ onStepComplete, onStepData }: UploadStepPro
           {scanning && <Spinner />}
           {scanning ? "Scanning..." : "Scan"}
         </button>
+        {!canScan && (
+          <p className="mt-2 text-xs text-center" style={{ color: "var(--color-text-muted)" }}>
+            Enter a project name and folder path to continue.
+          </p>
+        )}
       </div>
     </div>
   );
