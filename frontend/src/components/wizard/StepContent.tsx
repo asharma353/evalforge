@@ -3,6 +3,8 @@
 import { WIZARD_STEPS } from "@/lib/wizard-steps";
 import UploadStep from "./steps/UploadStep";
 import AnalyzeStep from "./steps/AnalyzeStep";
+import QuestionsStep from "./steps/QuestionsStep";
+import type { AnalysisResult } from "@/lib/api";
 
 interface StepContentProps {
   activeStepId: string;
@@ -34,7 +36,18 @@ export default function StepContent({
     return (
       <AnalyzeStep
         onStepComplete={onStepComplete}
+        onStepData={onStepData}
         stepData={stepData?.upload as { projectPath: string; filePaths: string[] } | undefined}
+      />
+    );
+  }
+
+  if (activeStep.id === "questions") {
+    return (
+      <QuestionsStep
+        onStepComplete={onStepComplete}
+        onStepData={onStepData}
+        stepData={stepData?.analyze as AnalysisResult | undefined}
       />
     );
   }

@@ -14,6 +14,7 @@ interface UploadStepData {
 
 interface AnalyzeStepProps {
   onStepComplete: (stepId: string) => void;
+  onStepData?: (stepId: string, data: unknown) => void;
   stepData?: UploadStepData;
 }
 
@@ -56,6 +57,7 @@ function Spinner() {
 
 export default function AnalyzeStep({
   onStepComplete,
+  onStepData,
   stepData,
 }: AnalyzeStepProps) {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -321,7 +323,10 @@ export default function AnalyzeStep({
         {/* Continue button */}
         <div className="mt-6">
           <button
-            onClick={() => onStepComplete("analyze")}
+            onClick={() => {
+              onStepData?.("analyze", { ...result, app_type: displayedAppType ?? result?.app_type });
+              onStepComplete("analyze");
+            }}
             className="px-6 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer"
             style={{
               backgroundColor: "var(--color-accent)",

@@ -97,3 +97,82 @@ export async function analyzeProject(
   }
   // Response is 202 - actual results come via SSE
 }
+
+// --- Question types and endpoints ---
+
+export interface QuestionOption {
+  value: string;
+  label: string;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  category: string;
+  type: string;
+  options: QuestionOption[] | null;
+  default: string | string[];
+  placeholder: string | null;
+  context_hint: string | null;
+}
+
+export interface GenerateQuestionsResponse {
+  questions: Question[];
+  generation_source: string;
+}
+
+export interface IntentModelResponse {
+  intent_model: Record<string, unknown>;
+}
+
+/**
+ * Generate tailored questions based on analysis results.
+ * POST /api/projects/questions/generate
+ */
+export async function generateQuestions(
+  analysisResult: AnalysisResult
+): Promise<GenerateQuestionsResponse> {
+  const response = await fetch("/api/projects/questions/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ analysis_result: analysisResult }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail || `Question generation failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * Submit question answers and get the intent model.
+ * POST /api/projects/questions/submit
+ */
+export async function submitAnswers(
+  analysisResult: AnalysisResult,
+  answers: Record<string, string | string[]>,
+  skipped: string[]
+): Promise<IntentModelResponse> {
+  const response = await fetch("/api/projects/questions/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      analysis_result: analysisResult,
+      answers,
+      skipped,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail || `Answer submission failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
