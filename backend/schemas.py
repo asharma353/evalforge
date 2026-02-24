@@ -115,3 +115,41 @@ class IntentModel(BaseModel):
 
 class IntentModelResponse(BaseModel):
     intent_model: dict
+
+
+# --- Eval generation schemas ---
+
+class FailureMode(BaseModel):
+    id: str                    # e.g. "agent_tool_hallucination"
+    name: str                  # Human-readable e.g. "Tool Hallucination"
+    description: str           # What this failure mode means
+    evaluator_type: str        # "assertion" | "regex" | "llm_judge"
+    app_type: str              # Which app type this targets
+    severity: str              # "high" | "medium" | "low"
+
+
+class EvaluatorFile(BaseModel):
+    failure_mode_id: str
+    filename: str              # e.g. "test_tool_hallucination.py"
+    evaluator_type: str        # "assertion" | "regex" | "llm_judge"
+    code: str                  # Full pytest-ready Python source
+    description: str           # What this evaluator tests
+
+
+class GenerationProgress(BaseModel):
+    event: str                 # "failure_mode_found" | "evaluator_complete" | "test_data_complete" | "generation_complete" | "generation_error"
+    data: dict                 # Payload varies by event type
+
+
+class GenerationResult(BaseModel):
+    failure_modes: list[FailureMode]
+    evaluators: list[EvaluatorFile]
+    generation_source: str     # "llm" | "static_fallback"
+
+
+class GenerateRequest(BaseModel):
+    intent_model: dict
+
+
+class GenerateResponse(BaseModel):
+    result: GenerationResult
