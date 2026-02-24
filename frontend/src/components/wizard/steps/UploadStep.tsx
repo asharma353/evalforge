@@ -1,11 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { scanProject, type ScanResponse } from "@/lib/api";
+import { scanProject, type ScanResponse, type FileNode } from "@/lib/api";
 import FileTreeView from "./FileTreeView";
 
 interface UploadStepProps {
   onStepComplete: (stepId: string) => void;
+  onStepData?: (stepId: string, data: unknown) => void;
+}
+
+/** Recursively extract all file paths (non-directory nodes) from a file tree. */
+function extractFilePaths(tree: FileNode[]): string[] {
+  const paths: string[] = [];
+  for (const node of tree) {
+    if (!node.is_dir) {
+      paths.push(node.path);
+    } else if (node.children) {
+      paths.push(...extractFilePaths(node.children));
+    }
+  }
+  return paths;
 }
 
 function Spinner() {
@@ -36,7 +50,7 @@ function Spinner() {
   );
 }
 
-export default function UploadStep({ onStepComplete }: UploadStepProps) {
+export default function UploadStep({ onStepComplete, onStepData }: UploadStepProps) {
   const [projectName, setProjectName] = useState("");
   const [folderPath, setFolderPath] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -83,6 +97,13 @@ export default function UploadStep({ onStepComplete }: UploadStepProps) {
   };
 
   const handleConfirm = () => {
+    if (scanResult && onStepData) {
+      const filePaths = extractFilePaths(scanResult.file_tree);
+      onStepData("upload", {
+        projectPath: scanResult.root_path,
+        filePaths,
+      });
+    }
     onStepComplete("upload");
   };
 

@@ -9,12 +9,16 @@ import { useSSE } from "@/lib/use-sse";
 export default function WizardLayout() {
   const [activeStepId, setActiveStepId] = useState("upload");
   const [completedStepIds, setCompletedStepIds] = useState<string[]>([]);
+  const [stepData, setStepData] = useState<Record<string, unknown>>({});
 
   // Establish SSE connection for real-time progress streaming
   const { connected: sseConnected } = useSSE("/api/sse", useCallback((event: string, data: unknown) => {
     // SSE events will be handled by individual steps in later phases
     console.debug("[SSE]", event, data);
   }, []));
+
+  // Suppress unused variable lint warning for sseConnected
+  void sseConnected;
 
   const handleStepClick = (stepId: string) => {
     const stepIndex = WIZARD_STEPS.findIndex((s) => s.id === stepId);
@@ -43,6 +47,10 @@ export default function WizardLayout() {
     []
   );
 
+  const handleStepData = useCallback((stepId: string, data: unknown) => {
+    setStepData((prev) => ({ ...prev, [stepId]: data }));
+  }, []);
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
       <StepSidebar
@@ -53,6 +61,8 @@ export default function WizardLayout() {
       <StepContent
         activeStepId={activeStepId}
         onStepComplete={handleStepComplete}
+        onStepData={handleStepData}
+        stepData={stepData}
       />
     </div>
   );

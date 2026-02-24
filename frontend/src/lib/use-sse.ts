@@ -60,8 +60,16 @@ export function useSSE(
       }
     };
 
-    // Listen for custom named events (test, progress, etc.)
-    const knownEvents = ["test", "progress", "complete", "error"];
+    // Listen for custom named events (test, progress, complete, analysis, etc.)
+    const knownEvents = [
+      "test",
+      "progress",
+      "complete",
+      "error",
+      "analysis_progress",
+      "analysis_complete",
+      "analysis_error",
+    ];
     for (const eventName of knownEvents) {
       es.addEventListener(eventName, (event: MessageEvent) => {
         try {

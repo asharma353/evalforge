@@ -2,22 +2,41 @@
 
 import { WIZARD_STEPS } from "@/lib/wizard-steps";
 import UploadStep from "./steps/UploadStep";
+import AnalyzeStep from "./steps/AnalyzeStep";
 
 interface StepContentProps {
   activeStepId: string;
   onStepComplete: (stepId: string) => void;
+  onStepData?: (stepId: string, data: unknown) => void;
+  stepData?: Record<string, unknown>;
 }
 
 export default function StepContent({
   activeStepId,
   onStepComplete,
+  onStepData,
+  stepData,
 }: StepContentProps) {
   const activeStep = WIZARD_STEPS.find((s) => s.id === activeStepId);
 
   if (!activeStep) return null;
 
   if (activeStep.id === "upload") {
-    return <UploadStep onStepComplete={onStepComplete} />;
+    return (
+      <UploadStep
+        onStepComplete={onStepComplete}
+        onStepData={onStepData}
+      />
+    );
+  }
+
+  if (activeStep.id === "analyze") {
+    return (
+      <AnalyzeStep
+        onStepComplete={onStepComplete}
+        stepData={stepData?.upload as { projectPath: string; filePaths: string[] } | undefined}
+      />
+    );
   }
 
   return (
