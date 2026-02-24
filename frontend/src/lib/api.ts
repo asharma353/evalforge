@@ -176,3 +176,49 @@ export async function submitAnswers(
 
   return response.json();
 }
+
+// --- Generation types and endpoints ---
+
+export interface FailureModeResult {
+  id: string;
+  name: string;
+  description: string;
+  evaluator_type: "assertion" | "regex" | "llm_judge";
+  app_type: string;
+  severity: "high" | "medium" | "low";
+}
+
+export interface EvaluatorResult {
+  failure_mode_id: string;
+  filename: string;
+  evaluator_type: "assertion" | "regex" | "llm_judge";
+  description: string;
+}
+
+export interface GenerationSummary {
+  failure_mode_count: number;
+  evaluator_count: number;
+  test_case_count: number;
+}
+
+/**
+ * Trigger eval and test data generation from an intent model.
+ * POST /api/projects/generate -- returns 202; actual results come via SSE.
+ */
+export async function triggerGeneration(
+  intentModel: Record<string, unknown>
+): Promise<void> {
+  const response = await fetch("/api/projects/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ intent_model: intentModel }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail || `Generation failed with status ${response.status}`
+    );
+  }
+  // 202 accepted - actual results come via SSE
+}
