@@ -4,6 +4,7 @@ import { WIZARD_STEPS } from "@/lib/wizard-steps";
 import UploadStep from "./steps/UploadStep";
 import AnalyzeStep from "./steps/AnalyzeStep";
 import QuestionsStep from "./steps/QuestionsStep";
+import GenerateStep from "./steps/GenerateStep";
 import type { AnalysisResult } from "@/lib/api";
 
 interface StepContentProps {
@@ -48,6 +49,16 @@ export default function StepContent({
         onStepComplete={onStepComplete}
         onStepData={onStepData}
         stepData={stepData?.analyze as AnalysisResult | undefined}
+      />
+    );
+  }
+
+  if (activeStep.id === "generate") {
+    return (
+      <GenerateStep
+        onStepComplete={onStepComplete}
+        onStepData={onStepData}
+        stepData={stepData?.questions as Record<string, unknown> | undefined}
       />
     );
   }
