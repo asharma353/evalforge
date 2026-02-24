@@ -64,3 +64,54 @@ class AnalysisResponse(BaseModel):
     call_sites: list[CallSiteInfo]
     app_type: AppTypeInfo
     summary: AnalysisSummary
+
+
+# --- Question schemas ---
+
+class QuestionOption(BaseModel):
+    value: str
+    label: str
+
+
+class Question(BaseModel):
+    id: str
+    text: str
+    category: str
+    type: str
+    options: list[QuestionOption] | None = None
+    default: str | list[str] = ""
+    placeholder: str | None = None
+    context_hint: str | None = None
+
+
+class GenerateQuestionsRequest(BaseModel):
+    analysis_result: dict
+
+
+class GenerateQuestionsResponse(BaseModel):
+    questions: list[Question]
+    generation_source: str  # "llm" or "static_fallback"
+
+
+class SubmitAnswersRequest(BaseModel):
+    analysis_result: dict
+    answers: dict[str, str | list[str]]
+    skipped: list[str] = []
+
+
+class IntentModel(BaseModel):
+    app_type: str
+    app_type_confidence: float
+    frameworks: list[str]
+    call_site_count: int
+    prompt_summary: list[dict]
+    quality_criteria: list[str]
+    failure_concerns: list[str]
+    domain_context: str
+    expected_behaviors: list[dict]
+    skipped_questions: list[str]
+    generation_hints: dict
+
+
+class IntentModelResponse(BaseModel):
+    intent_model: dict
