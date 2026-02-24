@@ -131,6 +131,8 @@ export default function AnalyzeStep({
       ? { ...result.app_type, type: appTypeOverride }
       : result?.app_type;
 
+  const hasProjectPath = Boolean(stepData?.projectPath);
+
   // --- Idle phase ---
   if (phase === "idle") {
     return (
@@ -161,20 +163,41 @@ export default function AnalyzeStep({
           </p>
           <button
             onClick={handleStartAnalysis}
-            className="px-6 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer"
+            disabled={!hasProjectPath}
+            className="px-6 py-2.5 rounded-md text-sm font-medium transition-colors"
             style={{
-              backgroundColor: "var(--color-accent)",
-              color: "#ffffff",
+              backgroundColor: hasProjectPath
+                ? "var(--color-accent)"
+                : "var(--color-surface)",
+              color: hasProjectPath ? "#ffffff" : "var(--color-text-muted)",
+              border: hasProjectPath
+                ? "none"
+                : "1px solid var(--color-border)",
+              opacity: hasProjectPath ? 1 : 0.6,
+              cursor: hasProjectPath ? "pointer" : "not-allowed",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "var(--color-accent-muted)")
+            onMouseEnter={
+              hasProjectPath
+                ? (e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      "var(--color-accent-muted)")
+                : undefined
             }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "var(--color-accent)")
+            onMouseLeave={
+              hasProjectPath
+                ? (e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      "var(--color-accent)")
+                : undefined
             }
           >
             Start Analysis
           </button>
+          {!hasProjectPath && (
+            <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
+              Complete the upload step first to enable analysis.
+            </p>
+          )}
         </div>
       </div>
     );
