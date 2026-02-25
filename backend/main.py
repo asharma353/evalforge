@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routers.export import router as export_router
 from routers.generation import router as generation_router
 from routers.projects import router as projects_router
 from routers.questions import router as questions_router
@@ -21,6 +22,7 @@ app.add_middleware(
 app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
 app.include_router(questions_router, prefix="/api/projects/questions", tags=["questions"])
 app.include_router(generation_router, prefix="/api/projects", tags=["generation"])
+app.include_router(export_router, prefix="/api/projects", tags=["export"])
 app.include_router(sse_router, prefix="/api/sse", tags=["sse"])
 
 
