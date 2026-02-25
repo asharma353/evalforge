@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { scanProject, type ScanResponse, type FileNode } from "@/lib/api";
 import FileTreeView from "./FileTreeView";
 
@@ -56,6 +56,12 @@ export default function UploadStep({ onStepComplete, onStepData }: UploadStepPro
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResponse | null>(null);
+
+  const [hasDirPicker, setHasDirPicker] = useState(false);
+
+  useEffect(() => {
+    setHasDirPicker("showDirectoryPicker" in window);
+  }, []);
 
   const canScan = projectName.trim() !== "" && folderPath.trim() !== "";
 
@@ -295,8 +301,7 @@ export default function UploadStep({ onStepComplete, onStepData }: UploadStepPro
                 }
               }}
             />
-            {"showDirectoryPicker" in
-              (typeof window !== "undefined" ? window : {}) && (
+            {hasDirPicker && (
               <button
                 onClick={handleBrowse}
                 className="px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer shrink-0"
