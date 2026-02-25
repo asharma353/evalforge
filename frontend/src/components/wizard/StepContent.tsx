@@ -5,6 +5,7 @@ import UploadStep from "./steps/UploadStep";
 import AnalyzeStep from "./steps/AnalyzeStep";
 import QuestionsStep from "./steps/QuestionsStep";
 import GenerateStep from "./steps/GenerateStep";
+import ExportStep from "./steps/ExportStep";
 import type { AnalysisResult } from "@/lib/api";
 
 interface StepContentProps {
@@ -59,6 +60,14 @@ export default function StepContent({
         onStepComplete={onStepComplete}
         onStepData={onStepData}
         stepData={stepData?.questions as Record<string, unknown> | undefined}
+      />
+    );
+  }
+
+  if (activeStep.id === "export") {
+    return (
+      <ExportStep
+        onStepComplete={onStepComplete}
       />
     );
   }
