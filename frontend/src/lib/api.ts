@@ -222,3 +222,74 @@ export async function triggerGeneration(
   }
   // 202 accepted - actual results come via SSE
 }
+
+// --- Export types and endpoints ---
+
+export interface FullEvaluatorResult {
+  failure_mode_id: string;
+  filename: string;
+  evaluator_type: "assertion" | "regex" | "llm_judge";
+  code: string;
+  description: string;
+}
+
+export interface FullTestCase {
+  input: string;
+  expected_behavior: string;
+  failure_mode_id: string;
+}
+
+export interface FullGenerationResult {
+  failure_modes: FailureModeResult[];
+  evaluators: FullEvaluatorResult[];
+  test_cases: FullTestCase[];
+  generation_source: string;
+}
+
+/**
+ * Fetch the full generation result including evaluator code and test cases.
+ * GET /api/projects/generate/result
+ */
+export async function fetchGenerationResult(): Promise<{
+  status: string;
+  result?: FullGenerationResult;
+  message?: string;
+}> {
+  const response = await fetch("/api/projects/generate/result");
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail || `Failed to fetch result with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * Export a customized eval suite as a zip file.
+ * POST /api/projects/export with selection filter; returns Blob.
+ */
+export async function exportEvalSuite(
+  enabledEvaluatorIds: string[],
+  enabledTestCaseIndices: number[]
+): Promise<Blob> {
+  const response = await fetch("/api/projects/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      enabled_evaluator_ids: enabledEvaluatorIds,
+      enabled_test_case_indices: enabledTestCaseIndices,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail || `Export failed with status ${response.status}`
+    );
+  }
+
+  return response.blob();
+}
