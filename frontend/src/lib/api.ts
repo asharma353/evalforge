@@ -155,7 +155,8 @@ export async function generateQuestions(
 export async function submitAnswers(
   analysisResult: AnalysisResult,
   answers: Record<string, string | string[]>,
-  skipped: string[]
+  skipped: string[],
+  customQA: { question: string; answer: string }[] = []
 ): Promise<IntentModelResponse> {
   const response = await fetch("/api/projects/questions/submit", {
     method: "POST",
@@ -164,6 +165,7 @@ export async function submitAnswers(
       analysis_result: analysisResult,
       answers,
       skipped,
+      custom_qa: customQA,
     }),
   });
 

@@ -8,6 +8,7 @@ import {
   type Question,
 } from "@/lib/api";
 import QuestionForm from "@/components/questions/QuestionForm";
+import CustomQAPanel, { type CustomQAPair } from "@/components/questions/CustomQAPanel";
 
 interface QuestionsStepProps {
   onStepComplete: (stepId: string) => void;
@@ -56,6 +57,7 @@ export default function QuestionsStep({
   const [skipped, setSkipped] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [answeredCount, setAnsweredCount] = useState(0);
+  const [customQAPairs, setCustomQAPairs] = useState<CustomQAPair[]>([]);
 
   // Auto-trigger question generation when stepData is available
   useEffect(() => {
@@ -115,8 +117,13 @@ export default function QuestionsStep({
       const answered = questions.filter((q) => !skipped.includes(q.id)).length;
       setAnsweredCount(answered);
 
-      const data = await submitAnswers(stepData, answers, skipped);
-      onStepData?.("questions", data.intent_model);
+      const intentModelResponse = await submitAnswers(
+        stepData,
+        answers,
+        skipped,
+        customQAPairs.map(({ question, answer }) => ({ question, answer })), // strip local id
+      );
+      onStepData?.("questions", intentModelResponse.intent_model);
       setPhase("complete");
     } catch (err) {
       const message =
@@ -333,6 +340,7 @@ export default function QuestionsStep({
           onSkipAll={handleSkipAll}
           isSubmitting={phase === "submitting"}
         />
+        <CustomQAPanel pairs={customQAPairs} onPairsChange={setCustomQAPairs} />
       </div>
     </div>
   );
