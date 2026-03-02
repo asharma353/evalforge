@@ -78,6 +78,7 @@ async def submit_answers(request: SubmitAnswersRequest):
             analysis_result=request.analysis_result,
             answers=request.answers,
             skipped=request.skipped,
+            custom_qa=[pair.model_dump() for pair in request.custom_qa],  # QUES-04
         )
         return IntentModelResponse(intent_model=intent_model)
     except Exception as exc:

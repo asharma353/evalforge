@@ -86,6 +86,7 @@ def build_intent_model(
     analysis_result: dict,
     answers: dict[str, str | list[str]],
     skipped: list[str],
+    custom_qa: list[dict] | None = None,
 ) -> dict:
     """Build the intent model from analysis results and user answers.
 
@@ -95,10 +96,15 @@ def build_intent_model(
 
     For skipped questions, sensible defaults from the question bank are used.
 
+    Custom Q&A pairs (QUES-04) are merged into domain_context, allowing
+    developers to inject domain knowledge the analysis did not capture.
+
     Args:
         analysis_result: The analysis result dict from the analysis pipeline.
         answers: Dict mapping question IDs to answer values.
         skipped: List of question IDs that were skipped.
+        custom_qa: Optional list of dicts with 'question' and 'answer' keys
+            representing free-form developer-provided domain knowledge.
 
     Returns:
         Dict conforming to IntentModel schema.
@@ -158,6 +164,16 @@ def build_intent_model(
         quality_criteria.append("Output is accurate and relevant")
     if not failure_concerns:
         failure_concerns.append("Handle errors gracefully")
+
+    # Merge custom Q&A into domain context (QUES-04)
+    if custom_qa:
+        custom_parts = [
+            f"Q: {pair['question']} A: {pair['answer']}"
+            for pair in custom_qa
+            if pair.get("question", "").strip() and pair.get("answer", "").strip()
+        ]
+        if custom_parts:
+            domain_context_parts.extend(custom_parts)
 
     domain_context = "; ".join(domain_context_parts) if domain_context_parts else "General purpose"
 

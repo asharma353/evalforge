@@ -93,10 +93,17 @@ class GenerateQuestionsResponse(BaseModel):
     generation_source: str  # "llm" or "static_fallback"
 
 
+class CustomQAPair(BaseModel):
+    """A single free-form question/answer pair from the developer."""
+    question: str
+    answer: str
+
+
 class SubmitAnswersRequest(BaseModel):
     analysis_result: dict
     answers: dict[str, str | list[str]]
     skipped: list[str] = []
+    custom_qa: list[CustomQAPair] = []  # QUES-04: optional domain knowledge injection
 
 
 class IntentModel(BaseModel):
