@@ -72,6 +72,10 @@ export function useSSE(
       "generation_progress",
       "generation_complete",
       "generation_error",
+      // Phase 7+ execution events
+      "execution_progress",
+      "execution_complete",
+      "execution_error",
     ];
     for (const eventName of knownEvents) {
       es.addEventListener(eventName, (event: MessageEvent) => {

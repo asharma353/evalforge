@@ -36,4 +36,22 @@ export const WIZARD_STEPS: WizardStep[] = [
     label: "Export",
     description: "Download your eval suite",
   },
+  {
+    id: "execute",
+    number: 6,
+    label: "Execute",
+    description: "Run evaluators against your app",
+  },
+  {
+    id: "results",
+    number: 7,
+    label: "Results",
+    description: "View per-case pass/fail results",
+  },
+  {
+    id: "annotate",
+    number: 8,
+    label: "Annotate",
+    description: "Label outputs to build ground truth",
+  },
 ];
