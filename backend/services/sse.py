@@ -5,30 +5,47 @@ import json
 
 
 class SSEManager:
-    """Manages Server-Sent Events for real-time progress streaming."""
+    """Per-connection queue registry for SSE fan-out.
+
+    Each SSE connection gets its own asyncio.Queue. send_event fans out
+    to ALL registered queues. Each connection's generator drains only its
+    own queue. Prevents events being stolen by whichever connection wins
+    the queue.get() race (the bug in the single-queue design).
+    """
 
     def __init__(self) -> None:
-        self._queue: asyncio.Queue[dict] = asyncio.Queue()
+        self._queues: dict[str, asyncio.Queue] = {}
 
     async def send_event(self, event_type: str, data: dict) -> None:
-        """Put an event onto the queue for streaming to connected clients.
+        """Fan out an event to ALL registered connection queues.
 
         Args:
             event_type: The SSE event name (e.g., "progress", "complete").
             data: Dictionary payload to send as JSON.
         """
-        await self._queue.put(
-            {"event": event_type, "data": json.dumps(data)}
-        )
+        payload = {"event": event_type, "data": json.dumps(data)}
+        # Shallow copy to avoid dict mutation during iteration (disconnect race)
+        for queue in list(self._queues.values()):
+            await queue.put(payload)
 
-    async def event_generator(self):
-        """Async generator that yields events from the queue.
+    async def event_generator(self, connection_id: str):
+        """Async generator that drains events for a single connection.
 
-        Yields SSE-formatted dicts suitable for sse-starlette EventSourceResponse.
+        Registers the queue on entry, always cleans up on exit (disconnect
+        or server close) via the finally block to prevent memory leaks.
+
+        Args:
+            connection_id: Unique ID for this SSE connection (UUID string).
         """
-        while True:
-            event = await self._queue.get()
-            yield event
+        queue: asyncio.Queue = asyncio.Queue()
+        self._queues[connection_id] = queue
+        try:
+            while True:
+                event = await queue.get()
+                yield event
+        finally:
+            # Always clean up — even if the client disconnects mid-stream
+            self._queues.pop(connection_id, None)
 
 
 # Global SSE manager instance
