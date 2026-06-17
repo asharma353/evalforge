@@ -16,6 +16,14 @@ __pycache__/
 .env.local
 .env.*.local
 
+# Reference material (third-party — not for redistribution)
+evals-faq.pdf
+
+# Internal planning & agent scaffolding (not for publication)
+.planning/
+.claude/
+CLAUDE.md
+
 # IDE
 .vscode/
 .idea/
