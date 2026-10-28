@@ -79,7 +79,7 @@ Backend tests: `cd backend && uv run pytest`.
 
 ## Methodology & credits
 
-EvalForge operationalizes the error-analysis-first, binary-evaluator approach from **Hamel Husain & Shreya Shankar — *"Frequently Asked Questions (And Answers) About AI Evals"* (2025)**. See [REFERENCES.md](REFERENCES.md). That document is not redistributed here — grab it from the authors.
+EvalForge aims to operationalize the error-analysis-first, binary-evaluator approach from **Hamel Husain & Shreya Shankar — *"Frequently Asked Questions (And Answers) About AI Evals"* (2025)**. See [REFERENCES.md](REFERENCES.md). That document is not redistributed here — grab it from the authors.
 
 ### Limitations of the test data
 
@@ -90,7 +90,7 @@ Test data is built from a short list of things to vary (such as input length or 
 
 Without an Anthropic key there is even less tailoring. The test case is a template sentence that lists the combination, with your domain text pasted in.
 
-This differs from the Husain and Shankar approach the project cites. They recommend starting from real conversations, finding where the app actually fails, and building tests from those failures. EvalForge guesses the failures up front instead. The annotation step planned for v1.1 (see [Status](#status)) would move it closer to that approach, because you would label real outputs as pass or fail.
+This is where v1.0 falls short of the error-analysis-first aim. Husain and Shankar recommend starting from real conversations, finding where the app actually fails, and building tests from those failures. v1.0 guesses the failures up front instead. The annotation step planned for v1.1 (see [Status](#status)) is the next move toward that aim, because you would label real outputs as pass or fail.
 
 ## License
 
