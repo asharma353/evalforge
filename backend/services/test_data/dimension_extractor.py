@@ -151,6 +151,8 @@ def _augment_with_llm(
     """
     import anthropic
 
+    from services.llm import EFFORT, MAX_TOKENS, MODEL, response_text
+
     domain_context = intent_model.get("domain_context", "")
     failure_description = failure_mode.get("description", "")
     failure_name = failure_mode.get("name", "")
@@ -180,14 +182,14 @@ Existing dimension names (do NOT duplicate):
 Identify 2-3 additional variation dimensions specific to this failure mode and domain."""
 
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=512,
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        output_config={"effort": EFFORT},
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    response_text = message.content[0].text.strip()
-    additional_dims = json.loads(response_text)
+    additional_dims = json.loads(response_text(message))
 
     if not isinstance(additional_dims, list):
         return base_dims

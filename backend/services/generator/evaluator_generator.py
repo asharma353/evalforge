@@ -140,8 +140,9 @@ def check_{id}(response: str, context: dict | None = None) -> bool:
     """
     client = anthropic.Anthropic()
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=256,
+        model="claude-haiku-5-5",
+        max_tokens=1024,
+        output_config={{"effort": "low"}},
         messages=[
             {{
                 "role": "user",
@@ -152,7 +153,9 @@ def check_{id}(response: str, context: dict | None = None) -> bool:
             }}
         ],
     )
-    result = json.loads(message.content[0].text)
+    # The model may think first, so read the text blocks rather than content[0]
+    text = "".join(block.text for block in message.content if block.type == "text")
+    result = json.loads(text)
     return bool(result.get("pass"))
 '''
 
@@ -310,6 +313,8 @@ def _generate_with_llm(failure_mode: dict, api_key: str) -> str:
     """
     import anthropic
 
+    from services.llm import EFFORT, MAX_TOKENS, MODEL, response_text
+
     fm_id = failure_mode.get("id", "unknown")
     evaluator_type = failure_mode.get("evaluator_type", "assertion")
     pass_example, fail_example = _get_examples(fm_id)
@@ -331,8 +336,10 @@ Requirements:
    - Docstring with pass/fail examples
    - For assertion type: plain Python comparisons, no external deps
    - For regex type: import re at top, use re.search/re.match
-   - For llm_judge type: use anthropic SDK (claude-3-5-haiku-20241022, max_tokens=256)
-     Return JSON with {"pass": bool, "reason": str}
+   - For llm_judge type: use anthropic SDK with model="claude-haiku-5-5", max_tokens=1024,
+     output_config={"effort": "low"}; ask the judge to return JSON {"pass": bool, "reason": str};
+     read the reply by joining the content blocks whose type is "text" (the first block
+     may be a thinking block), then json.loads it
 5. The logic must be SPECIFIC to the failure mode described -- not generic
 6. Return ONLY the Python source code, no markdown fences, no explanation"""
 
@@ -355,13 +362,14 @@ Generate the complete, specific evaluator code."""
 
     client = anthropic.Anthropic(api_key=api_key)
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=1024,
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        output_config={"effort": EFFORT},
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    code = message.content[0].text.strip()
+    code = response_text(message).strip()
 
     # Strip markdown code fences if present
     if code.startswith("```"):

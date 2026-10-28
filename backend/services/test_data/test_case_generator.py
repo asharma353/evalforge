@@ -118,6 +118,8 @@ def _llm_naturalize_batch(
     """
     import anthropic
 
+    from services.llm import EFFORT, MAX_TOKENS, MODEL, response_text
+
     failure_mode_id = failure_mode.get("id", "unknown")
     failure_name = failure_mode.get("name", "")
     failure_description = failure_mode.get("description", "")
@@ -151,14 +153,14 @@ the dimension values. The expected_behavior should describe what a correct (non-
 response looks like for this failure mode."""
 
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=2048,
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        output_config={"effort": EFFORT},
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    response_text = message.content[0].text.strip()
-    llm_cases = json.loads(response_text)
+    llm_cases = json.loads(response_text(message))
 
     if not isinstance(llm_cases, list):
         raise ValueError("LLM returned non-list response")

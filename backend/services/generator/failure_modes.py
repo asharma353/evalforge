@@ -223,6 +223,8 @@ def _augment_with_llm(
     """
     import anthropic
 
+    from services.llm import EFFORT, MAX_TOKENS, MODEL, response_text
+
     failure_concerns = intent_model.get("failure_concerns", [])
     generation_hints = intent_model.get("generation_hints", {})
     app_type = intent_model.get("app_type", "general")
@@ -264,14 +266,14 @@ Existing static failure mode IDs (do NOT duplicate these):
 Identify 1-2 additional failure modes specific to this application's concerns."""
 
     message = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=512,
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        output_config={"effort": EFFORT},
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    response_text = message.content[0].text.strip()
-    additional_modes = json.loads(response_text)
+    additional_modes = json.loads(response_text(message))
 
     if not isinstance(additional_modes, list):
         return static_modes

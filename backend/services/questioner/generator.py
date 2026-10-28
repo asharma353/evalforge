@@ -62,6 +62,8 @@ async def _generate_with_llm(
     """
     import anthropic
 
+    from services.llm import EFFORT, MAX_TOKENS, MODEL, response_text
+
     client = anthropic.Anthropic(api_key=api_key)
 
     # Build context from analysis
@@ -105,15 +107,15 @@ Question Bank for {app_type}:
 Generate 5-8 tailored questions as a JSON array."""
 
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        output_config={"effort": EFFORT},
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
     # Parse response
-    response_text = message.content[0].text
-    questions = json.loads(response_text)
+    questions = json.loads(response_text(message))
 
     if not isinstance(questions, list):
         raise ValueError("LLM response is not a JSON array")
