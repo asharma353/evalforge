@@ -81,6 +81,17 @@ Backend tests: `cd backend && uv run pytest`.
 
 EvalForge operationalizes the error-analysis-first, binary-evaluator approach from **Hamel Husain & Shreya Shankar — *"Frequently Asked Questions (And Answers) About AI Evals"* (2025)**. See [REFERENCES.md](REFERENCES.md). That document is not redistributed here — grab it from the authors.
 
+### Limitations of the test data
+
+Test data is built from a short list of things to vary (such as input length or how clear the user's intent is). Each test case is one combination of their values. Two weaker spots:
+
+- The starting list of things to vary depends on the kind of check, not on the failure mode. Two different failure modes that both use an AI judge start from the same list. Only Claude's optional additions are tailored to the failure mode and your domain.
+- There is no ranking. Every combination is treated as equally important. The picking step only makes sure every value shows up at least once, then fills the rest at random. Nothing tries to find the inputs most likely to break your app.
+
+Without an Anthropic key there is even less tailoring. The test case is a template sentence that lists the combination, with your domain text pasted in.
+
+This differs from the Husain and Shankar approach the project cites. They recommend starting from real conversations, finding where the app actually fails, and building tests from those failures. EvalForge guesses the failures up front instead. The annotation step planned for v1.1 (see [Status](#status)) would move it closer to that approach, because you would label real outputs as pass or fail.
+
 ## License
 
 [MIT](LICENSE) © 2025 Ayush Sharma
