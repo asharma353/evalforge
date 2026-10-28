@@ -137,7 +137,7 @@ class FailureMode(BaseModel):
 
 class EvaluatorFile(BaseModel):
     failure_mode_id: str
-    filename: str              # e.g. "test_tool_hallucination.py"
+    filename: str              # e.g. "check_tool_hallucination.py"
     evaluator_type: str        # "assertion" | "regex" | "llm_judge"
     code: str                  # Full pytest-ready Python source
     description: str           # What this evaluator tests

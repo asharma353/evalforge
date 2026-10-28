@@ -21,7 +21,7 @@ A five-step wizard, with live progress streamed over SSE:
 2. **Analyze** — tree-sitter AST parsing detects **LLM call sites** (OpenAI, Anthropic, LangChain, LiteLLM), extracts the **prompts**, and classifies the **app type** (RAG / agent / chatbot / doc-processing).
 3. **Question** — 5–8 questions tailored to your app type and the gaps in the analysis (plus your own custom Q&A).
 4. **Generate** — infers **failure modes**, then synthesizes **binary pass/fail evaluators** following a cost hierarchy (assertions → regex → LLM-as-judge only when judgment is genuinely subjective) and **dimensional synthetic test data**.
-5. **Export** — toggle individual evaluators/cases on or off and download a Python package with setup instructions.
+5. **Export** — toggle individual evaluators/cases on or off and download a pytest package with setup instructions. Implement one `run_app(input) -> str` hook in `app_adapter.py` to connect it to your app; `pytest eval_suite` then sends every test case through your app and checks each response.
 
 ## Architecture
 
@@ -69,6 +69,8 @@ npm run dev
 ```
 
 Open **http://localhost:3010** and point it at a local LLM project.
+
+Backend tests: `cd backend && uv run pytest`.
 
 ## Status
 

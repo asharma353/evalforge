@@ -4,13 +4,15 @@ The generated zip has this structure::
 
     eval_suite/
         __init__.py
+        app_adapter.py                  (run_app stub the user fills in)
         conftest.py
+        test_evals.py                   (runner: run_app -> check per test case)
         pyproject.toml
         README.md
         config.json
         evaluators/
             __init__.py
-            test_<failure_mode_id>.py   (one per selected evaluator)
+            check_<failure_mode_id>.py  (one per selected evaluator)
         test_data/
             test_cases.json
 """
@@ -96,10 +98,14 @@ def build_export_zip(
         # 6. conftest.py
         zf.writestr("eval_suite/conftest.py", _build_conftest())
 
-        # 7. pyproject.toml
+        # 7. app_adapter.py and the runner test that uses it
+        zf.writestr("eval_suite/app_adapter.py", _build_app_adapter())
+        zf.writestr("eval_suite/test_evals.py", _build_runner())
+
+        # 8. pyproject.toml
         zf.writestr("eval_suite/pyproject.toml", _build_pyproject(has_llm_judge))
 
-        # 8. README.md
+        # 9. README.md
         zf.writestr(
             "eval_suite/README.md",
             _build_readme(selected_failure_modes, has_llm_judge),
@@ -150,6 +156,112 @@ def test_cases_for(test_cases):
 '''
 
 
+def _build_app_adapter() -> str:
+    """Return the contents of app_adapter.py: a run_app stub the user implements."""
+    return '''\
+"""Connect the eval suite to your LLM application.
+
+Implement ``run_app`` so it sends one test-case input to your app and returns
+the app's final text response. The runner in test_evals.py calls it once per
+test case and passes the response to the matching evaluator.
+
+Example::
+
+    from my_app import answer_question
+
+    def run_app(user_input: str) -> str:
+        return answer_question(user_input)
+"""
+
+from __future__ import annotations
+
+
+def run_app(user_input: str) -> str:
+    """Send *user_input* to your LLM app and return its response text."""
+    raise NotImplementedError(
+        "run_app() in eval_suite/app_adapter.py is not implemented yet. "
+        "Edit it to call your LLM app with the test case input and return "
+        "the response text, then re-run pytest."
+    )
+'''
+
+
+def _build_runner() -> str:
+    """Return the contents of test_evals.py: one pytest case per test case."""
+    return '''\
+"""Run every test case through your app and check the response.
+
+For each case in test_data/test_cases.json, ``run_app`` from app_adapter.py
+turns the case's input into a response, and the matching
+``check_<failure_mode_id>`` function in evaluators/ decides pass or fail.
+"""
+
+from __future__ import annotations
+
+import importlib
+import json
+from collections.abc import Callable
+from pathlib import Path
+
+import pytest
+
+from . import app_adapter
+
+HERE = Path(__file__).parent
+
+
+def _load_checks() -> dict[str, Callable[..., bool]]:
+    """Map failure_mode_id to its check function, one per evaluators/check_*.py."""
+    checks = {}
+    for path in sorted((HERE / "evaluators").glob("check_*.py")):
+        module = importlib.import_module(f".evaluators.{path.stem}", __package__)
+        checks[path.stem.removeprefix("check_")] = getattr(module, path.stem)
+    return checks
+
+
+def _load_cases(checks: dict[str, Callable[..., bool]]) -> list[dict]:
+    """Return the test cases whose failure mode has an evaluator."""
+    with (HERE / "test_data" / "test_cases.json").open() as fh:
+        cases = json.load(fh)
+    return [case for case in cases if case.get("failure_mode_id") in checks]
+
+
+def _case_ids(cases: list[dict]) -> list[str]:
+    """Readable test ids like ``general_error_leak-3``."""
+    seen: dict[str, int] = {}
+    ids = []
+    for case in cases:
+        fm_id = case["failure_mode_id"]
+        seen[fm_id] = seen.get(fm_id, 0) + 1
+        ids.append(f"{fm_id}-{seen[fm_id]}")
+    return ids
+
+
+CHECKS = _load_checks()
+CASES = _load_cases(CHECKS)
+
+
+@pytest.mark.parametrize("case", CASES, ids=_case_ids(CASES))
+def test_failure_mode(case: dict) -> None:
+    try:
+        response = app_adapter.run_app(case["input"])
+    except NotImplementedError as exc:
+        pytest.exit(str(exc), returncode=pytest.ExitCode.USAGE_ERROR)
+
+    assert isinstance(response, str), (
+        f"run_app() must return a str, got {type(response).__name__}"
+    )
+
+    check = CHECKS[case["failure_mode_id"]]
+    assert check(response, case), (
+        f"{case[\'failure_mode_id\']} failed\\n"
+        f"  input:    {case[\'input\']!r}\\n"
+        f"  expected: {case.get(\'expected_behavior\', \'\')}\\n"
+        f"  response: {response!r}"
+    )
+'''
+
+
 def _build_pyproject(has_llm_judge: bool) -> str:
     """Return pyproject.toml content, conditionally including anthropic dependency."""
     anthropic_line = (
@@ -170,6 +282,11 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+# The suite is run in place, not imported as an installed package, so
+# `pip install -e .` only needs to install the dependencies above.
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
 '''
 
 
@@ -207,35 +324,49 @@ A generated eval suite targeting the failure modes identified for your LLM appli
 
 ## Setup
 
+From the folder that contains `eval_suite/`, install the dependencies:
+
 ```bash
-pip install -e .
+pip install -e eval_suite
 ```
 {api_key_section}
+## Connect Your App
+
+Open `app_adapter.py` and implement `run_app(user_input) -> str` so it sends one
+test case input to your LLM app and returns the response text. Until you do,
+the suite stops with a message pointing you there.
+
 ## Running Evaluations
 
-Run all evaluators:
+From the folder that contains `eval_suite/`, run every test case:
 
 ```bash
-pytest eval_suite/evaluators/ -v
+pytest eval_suite -v
 ```
 
-Run a specific evaluator:
+Run the cases for a single failure mode:
 
 ```bash
-pytest eval_suite/evaluators/test_<failure_mode>.py -v
+pytest eval_suite -v -k <failure_mode_id>
 ```
+
+Each test case's `input` is sent through `run_app`, and the response is passed to
+`check_<failure_mode_id>(response, context)` in `evaluators/`, where `context` is
+the test case dict. A check returns `True` when the response passes.
 
 ## Project Structure
 
 ```
 eval_suite/
     __init__.py          Package marker
+    app_adapter.py       run_app() hook: connect your LLM app here
+    test_evals.py        Runner: run_app -> check for every test case
     conftest.py          Pytest fixtures (test_cases, test_cases_for)
     pyproject.toml       Project metadata and dependencies
     config.json          Failure mode configuration
-    evaluators/          One test file per failure mode
+    evaluators/          One check function per failure mode
         __init__.py
-        test_*.py
+        check_*.py
     test_data/
         test_cases.json  Generated test cases
 ```

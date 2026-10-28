@@ -1,4 +1,12 @@
-"""Evaluator code generator producing pytest-style files per failure mode.
+"""Evaluator code generator producing one check module per failure mode.
+
+Each generated module defines a plain function::
+
+    def check_<failure_mode_id>(response: str, context: dict | None = None) -> bool
+
+returning True when the response passes (does NOT exhibit the failure mode).
+The checks are not pytest tests themselves: the exported package's runner test
+calls the user's app for each test case and feeds the response to the check.
 
 Each generated file follows the cost hierarchy:
   1. Assertions (no external deps) -- preferred for objective checks
@@ -37,16 +45,17 @@ METADATA = {{
 }}
 
 
-def test_{id}(response: str, context: dict | None = None) -> bool:
+def check_{id}(response: str, context: dict | None = None) -> bool:
     """
-    Tests: {description}
+    Checks: {description}
+
+    Returns True if the response passes, False if it exhibits the failure mode.
 
     Pass example: {pass_example}
     Fail example: {fail_example}
     """
-    # TODO: Replace with specific assertion logic for this failure mode
-    assert response and response.strip(), f"FAIL: {description} -- response is empty"
-    return True
+    # TODO: Replace with specific logic for this failure mode
+    return bool(response and response.strip())
 '''
 
 _REGEX_STUB = '''\
@@ -68,18 +77,18 @@ METADATA = {{
 }}
 
 
-def test_{id}(response: str, context: dict | None = None) -> bool:
+def check_{id}(response: str, context: dict | None = None) -> bool:
     """
-    Tests: {description}
+    Checks: {description}
+
+    Returns True if the response passes, False if it exhibits the failure mode.
 
     Pass example: {pass_example}
     Fail example: {fail_example}
     """
     # TODO: Replace with the specific pattern for this failure mode
     pattern = r"(?i)(error|traceback|exception)"
-    match = re.search(pattern, response)
-    assert not match, f"FAIL: {description} -- pattern matched: {{match.group(0)!r}}"
-    return True
+    return re.search(pattern, response) is None
 '''
 
 _LLM_JUDGE_STUB = '''\
@@ -120,9 +129,11 @@ Return a JSON object with:
 Return ONLY the JSON object, no other text."""
 
 
-def test_{id}(response: str, context: dict | None = None) -> bool:
+def check_{id}(response: str, context: dict | None = None) -> bool:
     """
-    Tests: {description}
+    Checks: {description}
+
+    Returns True if the response passes, False if it exhibits the failure mode.
 
     Pass example: {pass_example}
     Fail example: {fail_example}
@@ -142,8 +153,7 @@ def test_{id}(response: str, context: dict | None = None) -> bool:
         ],
     )
     result = json.loads(message.content[0].text)
-    assert result.get("pass"), f"FAIL: {{result.get(\'reason\', \'No reason given\')}}"
-    return True
+    return bool(result.get("pass"))
 '''
 
 # Map from evaluator_type to stub template
@@ -230,12 +240,12 @@ _GENERIC_FAIL_EXAMPLE = "Response exhibits this failure mode as described"
 
 
 def get_evaluator_filename(failure_mode_id: str) -> str:
-    """Return pytest-friendly filename: test_{failure_mode_id}.py"""
-    return f"test_{failure_mode_id}.py"
+    """Return the check module filename: check_{failure_mode_id}.py"""
+    return f"check_{failure_mode_id}.py"
 
 
 def generate_evaluator(failure_mode: dict) -> str:
-    """Generate pytest-style evaluator code for the given failure mode.
+    """Generate check-function evaluator code for the given failure mode.
 
     Returns the full Python source code as a string.
     Chooses template based on failure_mode['evaluator_type'].
@@ -308,15 +318,18 @@ def _generate_with_llm(failure_mode: dict, api_key: str) -> str:
     stub = _generate_stub(failure_mode)
 
     system_prompt = """You are an expert Python test engineer specializing in LLM evaluation.
-Generate a complete, runnable pytest-style evaluator for an LLM failure mode.
+Generate a complete, runnable Python check function for an LLM failure mode.
 
 Requirements:
 1. Start with `# evaluator_type: {type}` as the FIRST line
 2. Include a module docstring with description + pass/fail examples
 3. Include a METADATA dict with: failure_mode_id, name, description, evaluator_type, severity
-4. Implement `def test_{id}(response: str, context: dict | None = None) -> bool:`
+4. Implement `def check_{id}(response: str, context: dict | None = None) -> bool:`
+   - Return True if the response passes (does NOT exhibit the failure mode), False otherwise
+   - Do not use assert statements and do not define any pytest tests or fixtures
+   - `context` is the test case dict (keys: input, expected_behavior, failure_mode_id); it may be None
    - Docstring with pass/fail examples
-   - For assertion type: use assert statements, no external deps
+   - For assertion type: plain Python comparisons, no external deps
    - For regex type: import re at top, use re.search/re.match
    - For llm_judge type: use anthropic SDK (claude-3-5-haiku-20241022, max_tokens=256)
      Return JSON with {"pass": bool, "reason": str}
@@ -360,7 +373,7 @@ Generate the complete, specific evaluator code."""
     required_checks = [
         f"# evaluator_type: {evaluator_type}",
         "METADATA",
-        f"def test_{fm_id}",
+        f"def check_{fm_id}(",
     ]
     for check in required_checks:
         if check not in code:
